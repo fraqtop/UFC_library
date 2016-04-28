@@ -10,19 +10,18 @@ namespace UFC_library
     {
         public string name { get; set; }
         public Health hp { get; set; }
-        private float speed { get; set; }
-        public float weight { get; set; }
+        private float speed { get; set; }  // Скорость влияет на итоговую силу удара
+        public float weight { get; set; } // Вес руки влияет на силу удара
         public float height { get; set; }
-        private float endurance { get; set; }
-        private float accuracy { get; set; }
-        private float tactics { get; set; }
-        public float agressivness { get; set; }
-        private float _stamina;
-        private Dictionary<string, float> defence { get; set; }
-        public Random rnd { get; set; }
-        public bool rack { get; set; }
-        public bool block { get; set; }
-        public float recieved_damage { get; private set; }
+        private float endurance { get; set; } // Влияет на скорость регенерации
+        private float accuracy { get; set; } // Влияет на вероятность попадания
+        private float tactics { get; set; } // Влияет на критический уровень показателей и "обдуманность" решений
+        public float agressivness { get; set; } // Влияет на вероятность нанесения удара в каждый момент времени
+        private float _stamina; // Влияет на силу удара (мышечная усталость)
+        private Dictionary<string, float> defence { get; set; } // Уровни защиты для разных частей тела
+        public Random rnd { get; set; } // Генерация случайных чисел
+        public bool block { get; set; } // Стоит или нет блок, влияет на урон
+        public float recieved_damage { get; private set; } // Общий полученный урон
         public float stamina
         {
             get { return _stamina; }
@@ -33,7 +32,7 @@ namespace UFC_library
                 if (value < 1 & value > 0) _stamina = value;
             }
         }
-        protected List<Strike> strikes;
+        protected List<Skill> skills; // Приёмы
         public Fighter(string n_name, Health n_hp, float n_sp, float n_end, float n_acc,
             float n_tac, float n_agr, float n_we, float n_he, Dictionary<string, float> n_de)
         {
@@ -55,21 +54,21 @@ namespace UFC_library
             height = n_he / 100 * 46;
             recieved_damage = 0f;
             rnd = new Random();
-            rack = true;
             block = true;
-            strikes = new List<Strike>();
-            strikes.Add(new Strike("Uppercut", "head", 1.2f, 14));
-            strikes.Add(new Strike("Low_kick", "legs", 1.15f, 14));
-            strikes.Add(new Strike("Jab", "head", 0.9f, 14));
-            strikes.Add(new Strike("Cross", "stomach", 1.25f, 14));
-            strikes.Add(new Strike("Hook", "head", 1.8f, 14));
+            skills = new List<Skill>();
+            skills.Add(new Skill(n_name, "Heal", "", 0f, 0f)); // Объект, возвращаемый при защите
+            skills.Add(new Skill(n_name, "Uppercut", "head", 1.2f, 14));
+            skills.Add(new Skill(n_name, "Low_kick", "legs", 1.15f, 14));
+            skills.Add(new Skill(n_name, "Jab", "head", 0.9f, 14));
+            skills.Add(new Skill(n_name, "Cross", "stomach", 1.25f, 14));
+            skills.Add(new Skill(n_name, "Hook", "head", 1.8f, 14));
         }
 
-        protected void recount_probabilities()
+        protected void recount_probabilities() // Подсчёт относительных вероятностей нанесения удара
         {
-            float sum = strikes.Sum(x => x.probability);
+            float sum = skills.Sum(x => x.probability);
             float segment = 0;
-            foreach (Strike s in strikes)
+            foreach (Skill s in skills)
             {
                 s.probability /= sum;
                 s.probability += segment;
@@ -77,58 +76,56 @@ namespace UFC_library
             }
         }
 
-        private float dmg_count(float k)
+        private float dmg_count(float k) // Подсчёт наносимого врагу урона
         {
-            if ((float)rnd.NextDouble() > accuracy) return 0f;
+            if ((float)rnd.NextDouble() > accuracy) return 0f; // Если промахнулся
             float kinetic = (float)(Math.Pow(speed, 2) * weight) / 2f;
             return kinetic * k * stamina;
         }
 
-        private Strike attack()
+        private Skill attack()
         {
             float r = (float)this.rnd.NextDouble();
-            Strike result = strikes.Where(x => x.probability > r).First();
+            Skill result = skills.Where(x => x.probability > r).First(); //Выбор приёма
             result.dmg = dmg_count(result.k);
             stamina -= (result.k - endurance) / 4;
             return result;
         }
 
-        public Strike repay(Strike currstrike)
+        public void repay(Skill currstrike) // Реакция на удар соперника
         {
-            if (currstrike == null) return null;
-            if (currstrike.dmg == 0) return currstrike;
+            Judje.log.Add(currstrike); // Зарегистрировать удар
             float k = 0;
             defence.TryGetValue(currstrike.place, out k);
-            if (block != false | (float)rnd.NextDouble() < k)
+            if (block & k!=0) // Если стоит блок, урон уменьшается
             {
                 currstrike.dmg /= k * 10;
             }
             this.hp.damage(currstrike);
             recieved_damage += currstrike.dmg;
-            return currstrike;
         }
 
-        private void Extradamage(Dictionary<string, float> dic)
+        private void Extradamage(Dictionary<string, float> dic) // Дополнительный урон (на другие хар-ки)
         {
 
         }
 
-        private void defend()
+        private Skill defend()
         {
             stamina += endurance / 3;
             hp.recovery(endurance);
             List<string> keys = new List<string>(defence.Keys);
+            return skills.First(x => x.name == "Heal");
         }
 
-        public Strike act()
+        public Skill act() // Выбор между атакой и защитой
         {
             if (agressivness > tactics & (float)rnd.NextDouble() < agressivness) return attack();
-            if (make_desicion() == true) return attack();
-            else defend();
-            return null;
+            if (make_desicion()) return attack();
+            else return defend();
         }
 
-        private bool make_desicion()
+        private bool make_desicion() // Механизм принятия решения
         {
             if (!hp.check(tactics)) return false;
             if (stamina - tactics < -0.3f) return false;

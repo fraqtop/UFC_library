@@ -45,7 +45,7 @@
     <Compile Include="Health.cs" />
     <Compile Include="Judje.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Strike.cs" />
+    <Compile Include="Skill.cs" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />

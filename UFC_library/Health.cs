@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace UFC_library
 {
+    //Класс, инвапсулиующий работу с хп
     public class Health
     {
-        private float[] hps;
+        private float[] hps; // Массив с хп по разным частям тела
         public Health(float n_head, float n_body, float legs, float hands)
         {
             hps = new float[4];
@@ -18,7 +19,7 @@ namespace UFC_library
             hps[3] = hands;
         }
 
-        public void damage(Strike shot)
+        public void damage(Skill shot) // Процедура нанесения повреждений игроку
         {
             switch (shot.place)
             {
@@ -28,7 +29,7 @@ namespace UFC_library
                 case "stomach":
                     hps[1] -= shot.dmg;
                     break;
-                case "legs":
+                case "legs": // хп соотв части тела уменьшается на количество урона
                     hps[2] -= shot.dmg;
                     break;
                 case "hands":
@@ -36,27 +37,27 @@ namespace UFC_library
                     break;
             }
         }
-        public bool check(float currtac)
+        public bool check(float currtac)  // Проверка на то, стоит ли уходить в защиту
         {
             for (int i = 0; i < 3; i++)
             {
-                if ((hps[i] - currtac * 10) < -30) return false;
+                if ((hps[i] - currtac * 10) < -30) return false; // Если значение хп меньше критического, то лучше уйти в защиту
             }
             return true;
         }
-        public void recovery(float currendurance)
+        public void recovery(float currendurance) // Восстановление хп при уходе в глухую оборону
         {
             for (int i = 0; i < 3; i++)
             {
                 hps[i] += currendurance * 10;
-                if (hps[i] > 100) hps[i] = 100;
+                if (hps[i] > 100) hps[i] = 100; // Не может быть больше ста хп
             }
         }
-        public bool is_alive()
+        public bool is_alive() // Проверка на боеспособность
         {
             for (int i = 0; i < 3; i++)
             {
-                if (hps[i] <= 0) return false;
+                if (hps[i] <= 0) return false; // Если хп меньше нуля, то это нокаут
             }
             return true;
         }
