@@ -1,5 +1,0 @@
-c:\users\ома\documents\visual studio 2015\Projects\UFC_library\UFC_library\bin\Debug\UFC_library.dll
-c:\users\ома\documents\visual studio 2015\Projects\UFC_library\UFC_library\bin\Debug\UFC_library.pdb
-c:\users\ома\documents\visual studio 2015\Projects\UFC_library\UFC_library\obj\Debug\UFC_library.csprojResolveAssemblyReference.cache
-c:\users\ома\documents\visual studio 2015\Projects\UFC_library\UFC_library\obj\Debug\UFC_library.dll
-c:\users\ома\documents\visual studio 2015\Projects\UFC_library\UFC_library\obj\Debug\UFC_library.pdb

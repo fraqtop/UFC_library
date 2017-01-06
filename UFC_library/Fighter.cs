@@ -20,7 +20,6 @@ namespace UFC_library
         private float _stamina; // Влияет на силу удара (мышечная усталость)
         private Dictionary<string, float> defence { get; set; } // Уровни защиты для разных частей тела
         public Random rnd { get; set; } // Генерация случайных чисел
-        public bool block { get; set; } // Стоит или нет блок, влияет на урон
         public float recieved_damage { get; private set; } // Общий полученный урон
         public float stamina
         {
@@ -54,9 +53,8 @@ namespace UFC_library
             height = n_he / 100 * 46;
             recieved_damage = 0f;
             rnd = new Random();
-            block = true;
             skills = new List<Skill>();
-            skills.Add(new Skill(n_name, "Heal", "", 0f, 0f)); // Объект, возвращаемый при защите
+            skills.Add(new Skill(n_name, "Heal", "", 0f, 0)); // Объект, возвращаемый при защите
             skills.Add(new Skill(n_name, "Uppercut", "head", 1.2f, 14));
             skills.Add(new Skill(n_name, "Low_kick", "legs", 1.15f, 14));
             skills.Add(new Skill(n_name, "Jab", "head", 0.9f, 14));
@@ -64,7 +62,7 @@ namespace UFC_library
             skills.Add(new Skill(n_name, "Hook", "head", 1.8f, 14));
         }
 
-        protected void recount_probabilities() // Подсчёт относительных вероятностей нанесения удара
+        protected void prob_to_absolute() // Подсчёт относительных вероятностей нанесения удара
         {
             float sum = skills.Sum(x => x.probability);
             float segment = 0;
@@ -83,7 +81,7 @@ namespace UFC_library
             return kinetic * k * stamina;
         }
 
-        private Skill attack()
+        public Skill act()
         {
             float r = (float)this.rnd.NextDouble();
             Skill result = skills.Where(x => x.probability > r).First(); //Выбор приёма
@@ -92,44 +90,22 @@ namespace UFC_library
             return result;
         }
 
-        public void repay(Skill currstrike) // Реакция на удар соперника
+        public void repay(Skill currskill) // Реакция на удар соперника
         {
-            Judje.log.Add(currstrike); // Зарегистрировать удар
+            Judje.log.Add(currskill); // Зарегистрировать удар
             float k = 0;
-            defence.TryGetValue(currstrike.place, out k);
-            if (block & k!=0) // Если стоит блок, урон уменьшается
+            defence.TryGetValue(currskill.place, out k);
+            if (k != 0)
             {
-                currstrike.dmg /= k * 10;
+                currskill.dmg /= k * 10;
+                this.hp.damage(currskill);
+                recieved_damage += currskill.dmg;
             }
-            this.hp.damage(currstrike);
-            recieved_damage += currstrike.dmg;
         }
 
         private void Extradamage(Dictionary<string, float> dic) // Дополнительный урон (на другие хар-ки)
         {
 
-        }
-
-        private Skill defend()
-        {
-            stamina += endurance / 3;
-            hp.recovery(endurance);
-            List<string> keys = new List<string>(defence.Keys);
-            return skills.First(x => x.name == "Heal");
-        }
-
-        public Skill act() // Выбор между атакой и защитой
-        {
-            if (agressivness > tactics & (float)rnd.NextDouble() < agressivness) return attack();
-            if (make_desicion()) return attack();
-            else return defend();
-        }
-
-        private bool make_desicion() // Механизм принятия решения
-        {
-            if (!hp.check(tactics)) return false;
-            if (stamina - tactics < -0.3f) return false;
-            return true;
         }
     }
 }
